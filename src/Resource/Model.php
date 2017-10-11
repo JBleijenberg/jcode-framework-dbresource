@@ -23,11 +23,11 @@
 namespace Jcode\Db\Resource;
 
 use Jcode\Application;
-use Jcode\Object;
+use Jcode\DataObject;
 use \PDOException;
 use \Exception;
 
-abstract class Model extends Object
+abstract class Model extends DataObject
 {
 
     /**
