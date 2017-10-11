@@ -22,12 +22,12 @@
  */
 namespace Jcode\Db;
 
-use Jcode\Object;
+use Jcode\DataObject;
 
 interface AdapterInterface
 {
 
-    public function connect(Object $config);
+    public function connect(DataObject $config);
 
     public function getTable($tableName);
 

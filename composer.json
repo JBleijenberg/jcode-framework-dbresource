@@ -13,8 +13,7 @@
     }
   ],
   "require": {
-    "php": ">=7.0.0",
-    "jcode/framework": "0.0.*"
+    "jcode/framework": "dev-development"
   },
   "autoload": {
     "psr-0": {

@@ -25,18 +25,22 @@ use Jcode\Application;
 class Adapter
 {
     protected $isSharedInstance = true;
+
     /**
      * @inject \Jcode\Application\Config
      * @var \Jcode\Application\Config
      */
     protected $config;
+
     /**
      * @var \Jcode\Db\AdapterInterface
      */
     protected $instance;
+
     public function init()
     {
         $config = $this->config;
+
         if ($config->getDatabase() && $config->getDatabase()->hasData()) {
             $this->instance = Application::objectManager()->get($config->getDatabase()->getAdapter());
             $this->instance->connect($config->getDatabase());

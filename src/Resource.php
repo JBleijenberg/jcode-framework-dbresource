@@ -23,7 +23,7 @@
 namespace Jcode\Db;
 
 use Jcode\Application;
-use Jcode\Object\Collection;
+use Jcode\DataObject\Collection;
 use \Exception;
 
 abstract class Resource extends Collection
@@ -423,7 +423,7 @@ abstract class Resource extends Collection
 
             if (!empty($result)) {
                 foreach ($result as $item) {
-                    /* @var \Jcode\Object $itemObject */
+                    /* @var \Jcode\DataObject $itemObject */
                     $itemObject = Application::objectManager()->get($this->modelClass);
                     $itemObject->importArray($item);
                     $itemObject->copyToOrigData();
