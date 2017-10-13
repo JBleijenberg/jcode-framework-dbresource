@@ -112,7 +112,7 @@ abstract class Resource extends Collection
         }
 
         if (!$this->modelClass) {
-            $this->modelClass = str_replace('\Resource\\', '\Resource\Model\\', get_called_class());
+            $this->modelClass = sprintf('\%s', str_replace('\Resource', '', get_called_class()));
         }
 
         /* @var \Jcode\Db\\Adapter $adapter */

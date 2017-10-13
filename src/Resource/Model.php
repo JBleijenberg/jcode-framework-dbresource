@@ -42,7 +42,7 @@ abstract class Model extends DataObject
     public function getResource()
     {
         if (!$this->resource) {
-            $resourceClass = str_replace('\Resource\Model\\', '\Resource\\', get_called_class());
+            $resourceClass = sprintf('\\%s\\Resource', get_called_class());
 
             $this->resource = Application::objectManager()->get($resourceClass);
         }

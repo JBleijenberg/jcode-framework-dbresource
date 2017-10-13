@@ -21,7 +21,9 @@
  * @license     http://opensource.org/licenses/GPL-3.0 General Public License (GPL 3.0)
  */
 namespace Jcode\Db;
+
 use Jcode\Application;
+
 class Adapter
 {
     protected $isSharedInstance = true;
@@ -37,15 +39,35 @@ class Adapter
      */
     protected $instance;
 
+    /**
+     * Initialize DB connection
+     * 
+     * @throws \Exception
+     */
     public function init()
     {
         $config = $this->config;
 
         if ($config->getDatabase() && $config->getDatabase()->hasData()) {
-            $this->instance = Application::objectManager()->get($config->getDatabase()->getAdapter());
+            switch ($config->getDatabase()->getAdapter()) {
+                case 'mysql':
+                    $adapter = Application::objectManager()->get('\Jcode\Db\Adapter\Mysql\Mysql');
+
+                    break;
+                case 'postgresql':
+                    $adapter = Application::objectManager()->get('\Jcode\Db\Adapter\Postgresql\Postgresql');
+
+                    break;
+                default:
+                    throw new \Exception('No database adapter defined');
+            }
+
+            $this->instance = $adapter;
+
             $this->instance->connect($config->getDatabase());
         }
     }
+
     public function getInstance()
     {
         return $this->instance;
