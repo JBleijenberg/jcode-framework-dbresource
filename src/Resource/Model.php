@@ -79,7 +79,7 @@ abstract class Model extends DataObject
 
                 $update .= " WHERE {$resource->getPrimaryKey()} = :{$resource->getPrimaryKey()}";
 
-                /* @var \Jcode\Db\AdapterInterface|\Jcode\Db\Adapter\Mysql $adapter */
+                /* @var \Jcode\Db\AdapterInterface|\Jcode\DBAdapter\Mysql $adapter */
                 $adapter = $resource->getAdapter();
 
                 try {
@@ -108,7 +108,7 @@ abstract class Model extends DataObject
 
                 $insert = "INSERT INTO {$resource->getTable()} ({$columns}) VALUES (:{$binds})";
 
-                /* @var \Jcode\Db\Adapter\Mysql|\Jcode\Db\AdapterInterface $adapter */
+                /* @var \Jcode\DBAdapter\Mysql|\Jcode\Db\AdapterInterface $adapter */
                 $adapter = $resource->getAdapter();
 
                 try {
