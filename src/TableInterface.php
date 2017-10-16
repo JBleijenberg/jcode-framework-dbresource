@@ -25,5 +25,30 @@ namespace Jcode\Db;
 interface TableInterface
 {
 
+    public function setTableName($name);
+
+    public function getTableName();
+
+    public function setEngine($engine);
+
+    public function getEngine();
+
+    public function setCharSet($charset);
+
+    public function getCharSet();
+
+    public function addColumn($name, $type, $length = null, array $options = []);
+
+    public function alterColumn($name, array $options);
+
+    public function dropColumn($name);
+
+    public function getColumns();
+
+    public function getColumn($name);
+
+    public function setPrimaryKey($key);
+
+    public function getPrimaryKey();
 
 }
