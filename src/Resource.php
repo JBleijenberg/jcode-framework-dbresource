@@ -23,6 +23,7 @@
 namespace Jcode\Db;
 
 use Jcode\Application;
+use Jcode\DataObject;
 use Jcode\DataObject\Collection;
 use \Exception;
 
@@ -118,7 +119,8 @@ abstract class Resource extends Collection
         /* @var \Jcode\Db\\Adapter $adapter */
         $adapter = Application::objectManager()->get('\Jcode\Db\Adapter');
 
-        $this->adapter = $adapter->getInstance();
+        $this->adapter = $adapter->getInstance()->cleanup();
+
     }
 
     public function getAdapter()
@@ -412,6 +414,11 @@ abstract class Resource extends Collection
         }
 
         return $this->items[$index];
+    }
+
+    public function getFirstItem() :DataObject
+    {
+        return $this->getAllItems()[0];
     }
 
     public function getAllItems()

@@ -24,6 +24,7 @@ namespace Jcode\Db\Resource;
 
 use Jcode\Application;
 use Jcode\DataObject;
+use Jcode\Db\Resource;
 use \PDOException;
 use \Exception;
 
@@ -31,23 +32,13 @@ abstract class Model extends DataObject
 {
 
     /**
-     * @var \Jcode\Db\Resource
+     * @return Resource|object|\Countable
      */
-    protected $resource;
-
-    /**
-     * @return \Jcode\Db\Resource
-     * @throws \Exception
-     */
-    public function getResource()
+    public function getResource() :Resource
     {
-        if (!$this->resource) {
-            $resourceClass = sprintf('\\%s\\Resource', get_called_class());
+        $resourceClass = sprintf('\\%s\\Resource', get_called_class());
 
-            $this->resource = Application::objectManager()->get($resourceClass);
-        }
-
-        return $this->resource;
+        return Application::objectManager()->get($resourceClass);
     }
 
     protected function beforeSave()
@@ -57,8 +48,10 @@ abstract class Model extends DataObject
 
     /**
      * Save new or update object into DB
+     * @param bool $forceInsert
+     * @return Model
      */
-    public function save()
+    public function save($forceInsert = false) :Model
     {
         $this->beforeSave();
 
@@ -66,7 +59,7 @@ abstract class Model extends DataObject
             /* @var \Jcode\Db\Resource $resource */
             $resource = $this->getResource();
 
-            if ($this->getData($resource->getPrimaryKey())) {
+            if ($this->getData($resource->getPrimaryKey()) && $forceInsert === false) {
                 $update = "UPDATE {$resource->getTable()} SET ";
 
                 foreach ($this->getData() as $key => $value) {
@@ -87,7 +80,9 @@ abstract class Model extends DataObject
 
                     $stmt = $adapter->prepare($update);
 
-                    foreach ($this->getData() as $id => $value) {
+                    $stmt->bindValue($resource->getPrimaryKey(), $this->getData($resource->getPrimaryKey()));
+
+                    foreach (array_diff($this->getData(), $this->getOrigData()) as $id => $value) {
                         $stmt->bindValue(":{$id}", $value);
                     }
 
