@@ -328,6 +328,11 @@ abstract class Resource extends Collection
         return $this;
     }
 
+    public function addLeftJoin(array $tables, $clause, array $args = [])
+    {
+        return $this->addJoin($tables, $clause, $args, 'left');
+    }
+
     /**
      * Add Limit to select query
      *
@@ -418,7 +423,8 @@ abstract class Resource extends Collection
 
     public function getFirstItem() :DataObject
     {
-        return $this->getAllItems()[0];
+
+        return current($this->getAllItems());
     }
 
     public function getAllItems()
