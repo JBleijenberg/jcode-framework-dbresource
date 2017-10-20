@@ -82,7 +82,7 @@ abstract class Model extends DataObject
 
                     $stmt->bindValue($resource->getPrimaryKey(), $this->getData($resource->getPrimaryKey()));
 
-                    foreach (array_diff($this->getData(), $this->getOrigData()) as $id => $value) {
+                    foreach (array_diff_assoc($this->getData(), $this->getOrigData()) as $id => $value) {
                         $stmt->bindValue(":{$id}", $value);
                     }
 
@@ -92,10 +92,14 @@ abstract class Model extends DataObject
                     $adapter->rollBack();
 
                     Application::logException($e);
+
+                    throw new \Exception($e->getMessage());
                 } catch (Exception $e) {
                     $adapter->rollBack();
 
                     Application::logException($e);
+
+                    throw new \Exception($e->getMessage());
                 }
             } else {
                 $columns = implode(',', array_keys($this->getData()));
@@ -124,10 +128,14 @@ abstract class Model extends DataObject
                     $adapter->rollBack();
 
                     Application::logException($e);
+
+                    throw new \Exception($e->getMessage());
                 } catch (Exception $e) {
                     $adapter->rollBack();
 
                     Application::logException($e);
+
+                    throw new \Exception($e->getMessage());
                 }
             }
         }
