@@ -108,8 +108,8 @@ abstract class Resource extends Collection
 
     public function init()
     {
-        if (!$this->table || !$this->primaryKey) {
-            throw new Exception('Tablename and primary key are required for ' . __CLASS__);
+        if (!$this->table) {
+            throw new Exception('Tablename is required for ' . __CLASS__);
         }
 
         if (!$this->modelClass) {
@@ -321,7 +321,7 @@ abstract class Resource extends Collection
             array_push($this->select, sprintf('%s.*', current($tables)));
         } else {
             foreach ($args as $arg) {
-                array_push($this->select, sprintf('%s.%s', current($tables), $arg));
+                array_push($this->select, $arg);
             }
         }
 
@@ -421,15 +421,20 @@ abstract class Resource extends Collection
         return $this->items[$index];
     }
 
-    public function getFirstItem() :DataObject
+    public function getFirstItem() :?DataObject
     {
+        if (!$this->items) {
+            $this->getAllItems();
+        }
 
-        return current($this->getAllItems());
+        reset($this->items);
+
+        return current($this->items);
     }
 
     public function getAllItems()
     {
-        if (empty($this->items)) {
+        if (!$this->items) {
             $this->getAdapter()->build($this);
 
             $result = $this->getAdapter()->execute();
@@ -447,7 +452,7 @@ abstract class Resource extends Collection
             }
         }
 
-        return $this->items;
+        return $this;
     }
 
     public function getQuery()
@@ -459,7 +464,11 @@ abstract class Resource extends Collection
 
     public function count()
     {
-        return count($this->getAllItems());
+        if (empty($this->items)) {
+            $this->getAllItems();
+        }
+
+        return count($this->items);
     }
 
     public function rewind()
@@ -481,5 +490,19 @@ abstract class Resource extends Collection
         return $this->getAdapter()
             ->setQuery($query)
             ->execute();
+    }
+
+    public function delete()
+    {
+        return $this->getAdapter()
+            ->build($this, true)
+            ->execute();
+    }
+
+    public function reset()
+    {
+        $this->init();
+
+        return $this;
     }
 }

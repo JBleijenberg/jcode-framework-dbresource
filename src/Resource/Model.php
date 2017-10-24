@@ -50,6 +50,7 @@ abstract class Model extends DataObject
      * Save new or update object into DB
      * @param bool $forceInsert
      * @return Model
+     * @throws Exception
      */
     public function save($forceInsert = false) :Model
     {
@@ -123,7 +124,9 @@ abstract class Model extends DataObject
                     $lastInsertId = $adapter->lastInsertId();
                     $adapter->commit();
 
-                    $this->setData($resource->getPrimaryKey(), $lastInsertId);
+                    if ($resource->getPrimaryKey()) {
+                        $this->setData($resource->getPrimaryKey(), $lastInsertId);
+                    }
                 } catch (PDOException $e) {
                     $adapter->rollBack();
 
