@@ -31,6 +31,8 @@ use \Exception;
 abstract class Model extends DataObject
 {
 
+    private $isLoaded = false;
+
     /**
      * @return Resource|object|\Countable
      */
@@ -143,6 +145,8 @@ abstract class Model extends DataObject
             }
         }
 
+        $this->afterSave();
+
         return $this;
     }
 
@@ -176,9 +180,16 @@ abstract class Model extends DataObject
             $this->importObject($resource->getItemByIndex(0));
         }
 
+        $this->isLoaded = true;
+
         $this->afterLoad();
 
         return $this;
+    }
+
+    public function isLoaded()
+    {
+        return $this->isLoaded;
     }
 
     protected function afterLoad()
@@ -196,22 +207,26 @@ abstract class Model extends DataObject
      */
     public function delete()
     {
-        /* @var \Jcode\Db\Resource $resource */
-        $resource = $this->getResource();
+        if ($this->isLoaded()) {
+            /* @var \Jcode\Db\Resource $resource */
+            $resource = $this->getResource();
 
-        $this->beforeDelete();
+            $this->beforeDelete();
 
-        if ($this->getData($resource->getPrimaryKey())) {
-            $query = "DELETE FROM {$resource->getTable()} WHERE {$resource->getPrimaryKey()} = '{$this->getData($resource->getPrimaryKey())}'";
+            if ($this->getData($resource->getPrimaryKey())) {
+                $query = "DELETE FROM {$resource->getTable()} WHERE {$resource->getPrimaryKey()} = '{$this->getData($resource->getPrimaryKey())}'";
 
-            try {
-                $resource->execute($query);
-            } catch (Exception $e) {
-                Application::logException($e);
+                try {
+                    $resource->execute($query);
+                } catch (Exception $e) {
+                    Application::logException($e);
+                }
             }
-        }
 
-        $this->afterDelete();
+            $this->afterDelete();
+        } else {
+            throw new \Exception('Cannot delete resource because it is not loaded.');
+        }
     }
 
     protected function afterDelete()
