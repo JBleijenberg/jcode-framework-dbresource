@@ -51,11 +51,11 @@ class Adapter
         if ($config->getDatabase() && $config->getDatabase()->hasData()) {
             switch ($config->getDatabase()->getAdapter()) {
                 case 'mysql':
-                    $adapter = Application::objectManager()->get('\Jcode\DBAdapter\Mysql');
+                    $adapter = Application::getClass('\Jcode\DBAdapter\Mysql');
 
                     break;
                 case 'postgresql':
-                    $adapter = Application::objectManager()->get('\Jcode\DBAdapter\Postgresql\Postgresql');
+                    $adapter = Application::getClass('\Jcode\DBAdapter\Postgresql\Postgresql');
 
                     break;
                 default:

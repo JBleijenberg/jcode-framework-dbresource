@@ -40,7 +40,7 @@ abstract class Model extends DataObject
     {
         $resourceClass = sprintf('\\%s\\Resource', get_called_class());
 
-        return Application::objectManager()->get($resourceClass);
+        return Application::getClass($resourceClass);
     }
 
     protected function beforeSave()
@@ -164,13 +164,21 @@ abstract class Model extends DataObject
      * Load object from DB
      *
      * @param $id
-     *
      * @return $this
+     * @throws Exception
      */
-    public function load($id)
+    public function load($id = null)
     {
         /* @var \Jcode\Db\Resource $resource */
         $resource = $this->getResource();
+
+        if ($id == null) {
+            if ($this->getData($resource->getPrimaryKey())) {
+                $id = $this->getData($resource->getPrimaryKey());
+            } else {
+                throw new \Exception('No ID given nor a primary key is set');
+            }
+        }
 
         $this->beforeLoad();
 

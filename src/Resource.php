@@ -117,7 +117,7 @@ abstract class Resource extends Collection
         }
 
         /* @var \Jcode\Db\\Adapter $adapter */
-        $adapter = Application::objectManager()->get('\Jcode\Db\Adapter');
+        $adapter = Application::getClass('\Jcode\Db\Adapter');
 
         $this->adapter = $adapter->getInstance()->cleanup();
 
@@ -287,6 +287,29 @@ abstract class Resource extends Collection
         return $this;
     }
 
+    public function calculateFoundRows()
+    {
+        $this->select[0] = sprintf('SQL_CALC_FOUND_ROWS %s', $this->select[0]);
+
+        return $this;
+    }
+
+    /**
+     * Get all items and return the total cound regardless of the limit and offset
+     *
+     * @return mixed
+     */
+    public function getTotalRows()
+    {
+        if (empty($this->items)) {
+            $this->getAllItems();
+        }
+
+        $rows = $this->execute('SELECT FOUND_ROWS();');
+
+        return $rows[0]['FOUND_ROWS()'];
+    }
+
     /**
      * Add custom expression to filter
      *
@@ -442,7 +465,7 @@ abstract class Resource extends Collection
             if (!empty($result)) {
                 foreach ($result as $item) {
                     /* @var \Jcode\DataObject $itemObject */
-                    $itemObject = Application::objectManager()->get($this->modelClass);
+                    $itemObject = Application::getClass($this->modelClass);
                     $itemObject->importArray($item);
                     $itemObject->copyToOrigData();
                     $itemObject->hasChangedData(false);
@@ -453,6 +476,21 @@ abstract class Resource extends Collection
         }
 
         return $this;
+    }
+
+    public function getColumn($column) :array
+    {
+        if (empty($this->items)) {
+            $this->getAllItems();
+        }
+
+        $values = [];
+
+        foreach ($this->items as $item) {
+            $values[] = $item->getData($column);
+        }
+
+        return $values;
     }
 
     public function getQuery()
@@ -504,5 +542,25 @@ abstract class Resource extends Collection
         $this->init();
 
         return $this;
+    }
+
+    public function toArray($recursive = false)
+    {
+        $array = [];
+
+        if (empty($this->items)) {
+            $this->getAllItems();
+        }
+
+        foreach ($this->items as $item) {
+            if ($recursive === true) {
+
+                $array[] = $item->toArray();
+            } else {
+                $array[] = $item;
+            }
+        }
+
+        return $array;
     }
 }
