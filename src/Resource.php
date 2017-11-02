@@ -457,6 +457,8 @@ abstract class Resource extends Collection
 
     public function getAllItems()
     {
+        $collection = Application::getClass('\Jcode\DataObject\Collection');
+
         if (!$this->items) {
             $this->getAdapter()->build($this);
 
@@ -471,11 +473,12 @@ abstract class Resource extends Collection
                     $itemObject->hasChangedData(false);
 
                     $this->addItem($itemObject);
+                    $collection->addItem($itemObject);
                 }
             }
         }
 
-        return $this;
+        return $collection;
     }
 
     public function getColumn($column) :array

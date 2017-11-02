@@ -62,11 +62,13 @@ abstract class Model extends DataObject
             /* @var \Jcode\Db\Resource $resource */
             $resource = $this->getResource();
 
+            $columns = array_column($resource->execute("DESCRIBE {$resource->getTable()}"), 'Field');
+
             if ($this->getData($resource->getPrimaryKey()) && $forceInsert === false) {
                 $update = "UPDATE {$resource->getTable()} SET ";
 
-                foreach ($this->getData() as $key => $value) {
-                    if ($key != $resource->getPrimaryKey() && $value !== $this->getOrigData($key)) {
+                foreach ($this->getAllData() as $key => $value) {
+                    if ($key != $resource->getPrimaryKey() && $value !== $this->getOrigData($key) && in_array($key, $columns)) {
                         $update .= "{$key} = :{$key}, ";
                     }
                 }
@@ -85,19 +87,23 @@ abstract class Model extends DataObject
 
                     $stmt->bindValue($resource->getPrimaryKey(), $this->getData($resource->getPrimaryKey()));
 
-                    foreach (array_diff_assoc($this->getData(), $this->getOrigData()) as $id => $value) {
-                        $stmt->bindValue(":{$id}", $value);
+                    foreach (array_diff_assoc($this->getAllData(), $this->getOrigData()) as $id => $value) {
+                        if (in_array($id, $columns)) {
+                            $stmt->bindValue(":{$id}", $value);
+                        }
                     }
 
                     $stmt->execute();
                     $adapter->commit();
                 } catch (PDOException $e) {
+                    debug($this, true);
                     $adapter->rollBack();
 
                     Application::logException($e);
 
                     throw new \Exception($e->getMessage());
                 } catch (Exception $e) {
+                    debug($this, true);
                     $adapter->rollBack();
 
                     Application::logException($e);
@@ -105,8 +111,8 @@ abstract class Model extends DataObject
                     throw new \Exception($e->getMessage());
                 }
             } else {
-                $columns = implode(',', array_keys($this->getData()));
-                $binds = implode(',:', array_keys($this->getData()));
+                $columns = implode(',', array_keys($this->getAllData()));
+                $binds = implode(',:', array_keys($this->getAllData()));
 
                 $insert = "INSERT INTO {$resource->getTable()} ({$columns}) VALUES (:{$binds})";
 
@@ -118,7 +124,7 @@ abstract class Model extends DataObject
 
                     $stmt = $adapter->prepare($insert);
 
-                    foreach ($this->getData() as $id => $value) {
+                    foreach ($this->getAllData() as $id => $value) {
                         $stmt->bindValue(":{$id}", $value);
                     }
 
