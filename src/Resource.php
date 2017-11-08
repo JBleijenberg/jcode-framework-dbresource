@@ -444,7 +444,7 @@ abstract class Resource extends Collection
         return $this->items[$index];
     }
 
-    public function getFirstItem() :?DataObject
+    public function getFirstItem()
     {
         if (!$this->items) {
             $this->getAllItems();
@@ -479,6 +479,11 @@ abstract class Resource extends Collection
         }
 
         return $collection;
+    }
+
+    public function getAllData()
+    {
+        return $this->getAllItems();
     }
 
     public function getColumn($column) :array

@@ -58,12 +58,11 @@ abstract class Model extends DataObject
     {
         $this->beforeSave();
 
+        /* @var \Jcode\Db\Resource $resource */
+        $resource = $this->getResource();
+        $columns  = array_column($resource->execute("DESCRIBE {$resource->getTable()}"), 'Field');
+
         if ($this->hasChangedData()) {
-            /* @var \Jcode\Db\Resource $resource */
-            $resource = $this->getResource();
-
-            $columns = array_column($resource->execute("DESCRIBE {$resource->getTable()}"), 'Field');
-
             if ($this->getData($resource->getPrimaryKey()) && $forceInsert === false) {
                 $update = "UPDATE {$resource->getTable()} SET ";
 
@@ -96,14 +95,12 @@ abstract class Model extends DataObject
                     $stmt->execute();
                     $adapter->commit();
                 } catch (PDOException $e) {
-                    debug($this, true);
                     $adapter->rollBack();
 
                     Application::logException($e);
 
                     throw new \Exception($e->getMessage());
                 } catch (Exception $e) {
-                    debug($this, true);
                     $adapter->rollBack();
 
                     Application::logException($e);
@@ -111,10 +108,11 @@ abstract class Model extends DataObject
                     throw new \Exception($e->getMessage());
                 }
             } else {
-                $columns = implode(',', array_keys($this->getAllData()));
-                $binds = implode(',:', array_keys($this->getAllData()));
+                $keys       = array_keys($this->getAllData());
+                $columnKeys = implode(',', array_intersect($keys, $columns));
+                $binds      = implode(',:', array_intersect($keys, $columns));
 
-                $insert = "INSERT INTO {$resource->getTable()} ({$columns}) VALUES (:{$binds})";
+                $insert = "INSERT INTO {$resource->getTable()} ({$columnKeys}) VALUES (:{$binds})";
 
                 /* @var \Jcode\DBAdapter\Mysql|\Jcode\Db\AdapterInterface $adapter */
                 $adapter = $resource->getAdapter();
@@ -125,7 +123,9 @@ abstract class Model extends DataObject
                     $stmt = $adapter->prepare($insert);
 
                     foreach ($this->getAllData() as $id => $value) {
-                        $stmt->bindValue(":{$id}", $value);
+                        if (in_array($id, $columns)) {
+                            $stmt->bindValue(":{$id}", $value);
+                        }
                     }
 
                     $stmt->execute();
@@ -175,28 +175,30 @@ abstract class Model extends DataObject
      */
     public function load($id = null)
     {
-        /* @var \Jcode\Db\Resource $resource */
-        $resource = $this->getResource();
+        if (!$this->isLoaded()) {
+            /* @var \Jcode\Db\Resource $resource */
+            $resource = $this->getResource();
 
-        if ($id == null) {
-            if ($this->getData($resource->getPrimaryKey())) {
-                $id = $this->getData($resource->getPrimaryKey());
-            } else {
-                throw new \Exception('No ID given nor a primary key is set');
+            if ($id == null) {
+                if ($this->getData($resource->getPrimaryKey())) {
+                    $id = $this->getData($resource->getPrimaryKey());
+                } else {
+                    throw new \Exception('No ID given nor a primary key is set');
+                }
             }
+
+            $this->beforeLoad();
+
+            $resource->addFilter($resource->getPrimaryKey(), $id);
+
+            if ($resource->count() === 1) {
+                $this->importObject($resource->getItemByIndex(0));
+            }
+
+            $this->isLoaded = true;
+
+            $this->afterLoad();
         }
-
-        $this->beforeLoad();
-
-        $resource->addFilter($resource->getPrimaryKey(), $id);
-
-        if ($resource->count() === 1) {
-            $this->importObject($resource->getItemByIndex(0));
-        }
-
-        $this->isLoaded = true;
-
-        $this->afterLoad();
 
         return $this;
     }
@@ -246,5 +248,15 @@ abstract class Model extends DataObject
     protected function afterDelete()
     {
 
+    }
+
+    /**
+     * Return the primary key/id of the current object
+     *
+     * @return null
+     */
+    public function getId()
+    {
+        return $this->getData($this->getResource()->getPrimaryKey());
     }
 }
