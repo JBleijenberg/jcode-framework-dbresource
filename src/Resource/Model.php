@@ -67,7 +67,11 @@ abstract class Model extends DataObject
                 $update = "UPDATE {$resource->getTable()} SET ";
 
                 foreach ($this->getAllData() as $key => $value) {
-                    if ($key != $resource->getPrimaryKey() && $value !== $this->getOrigData($key) && in_array($key, $columns)) {
+                    if (
+                        ($key != $resource->getPrimaryKey()) &&
+                        ($value !== $this->getOrigData($key)) &&
+                        (in_array($key, $columns))
+                    ) {
                         $update .= "{$key} = :{$key}, ";
                     }
                 }
