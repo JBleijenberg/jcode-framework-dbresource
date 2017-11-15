@@ -116,7 +116,7 @@ abstract class Resource extends Collection
             $this->modelClass = sprintf('\%s', str_replace('\Resource', '', get_called_class()));
         }
 
-        /* @var \Jcode\Db\\Adapter $adapter */
+        /* @var \Jcode\Db\Adapter $adapter */
         $adapter = Application::getClass('\Jcode\Db\Adapter');
 
         $this->adapter = $adapter->getInstance()->cleanup();
