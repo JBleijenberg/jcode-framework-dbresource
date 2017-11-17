@@ -289,7 +289,10 @@ abstract class Resource extends Collection
 
     public function calculateFoundRows()
     {
-        $this->select[0] = sprintf('SQL_CALC_FOUND_ROWS %s', $this->select[0]);
+        reset($this->select);
+
+        $key                = key($this->select);
+        $this->select[$key] = sprintf('SQL_CALC_FOUND_ROWS %s', $this->select[$key]);
 
         return $this;
     }
