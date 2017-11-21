@@ -72,7 +72,12 @@ abstract class Model extends DataObject
                         ($value !== $this->getOrigData($key)) &&
                         (in_array($key, $columns))
                     ) {
-                        $update .= "{$key} = :{$key}, ";
+                        if ($value instanceof Resource) {
+                            $data = trim($this->getData($bind)->getQuery(), ';');
+                            $update .= "{$key} = ({$data}), ";
+                        } else {
+                            $update .= "{$key} = :{$key}, ";
+                        }
                     }
                 }
 
@@ -84,7 +89,9 @@ abstract class Model extends DataObject
                 $adapter = $resource->getAdapter();
 
                 try {
-                    $adapter->beginTransaction();
+                    if (!$adapter->inTransaction()) {
+                        $adapter->beginTransaction();
+                    }
 
                     $stmt = $adapter->prepare($update);
 
@@ -92,7 +99,9 @@ abstract class Model extends DataObject
 
                     foreach (array_diff_assoc($this->getAllData(), $this->getOrigData()) as $id => $value) {
                         if (in_array($id, $columns)) {
-                            $stmt->bindValue(":{$id}", $value);
+                            if (!$value instanceof Resource) {
+                                $stmt->bindValue(":{$id}", $value, $this->getDataType($value));
+                            }
                         }
                     }
 
@@ -116,23 +125,41 @@ abstract class Model extends DataObject
                 $columnKeys = implode(',', array_intersect($keys, $columns));
                 $binds      = implode(',:', array_intersect($keys, $columns));
 
-                $insert = "INSERT INTO {$resource->getTable()} ({$columnKeys}) VALUES (:{$binds})";
+                $binds = '';
+
+                foreach (array_intersect($keys, $columns) as $bind) {
+                    if ($this->getData($bind) instanceof Resource) {
+                        $data = trim($this->getData($bind)->getQuery(), ';');
+                        $binds .= "({$data}), ";
+                    } else {
+                        $binds .= ":{$bind}, ";
+                    }
+                }
+
+                $binds = trim($binds, ', ');
+
+                $insert = "INSERT INTO {$resource->getTable()} ({$columnKeys}) VALUES ({$binds})";
 
                 /* @var \Jcode\DBAdapter\Mysql|\Jcode\Db\AdapterInterface $adapter */
                 $adapter = $resource->getAdapter();
 
                 try {
-                    $adapter->beginTransaction();
+                    if (!$adapter->inTransaction()) {
+                        $adapter->beginTransaction();
+                    }
 
                     $stmt = $adapter->prepare($insert);
 
                     foreach ($this->getAllData() as $id => $value) {
                         if (in_array($id, $columns)) {
-                            $stmt->bindValue(":{$id}", $value);
+                            if (!$value instanceof Resource) {
+                                $stmt->bindValue(":{$id}", $value, $this->getDataType($value));
+                            }
                         }
                     }
 
                     $stmt->execute();
+
                     $lastInsertId = $adapter->lastInsertId();
                     $adapter->commit();
 
@@ -158,6 +185,27 @@ abstract class Model extends DataObject
         $this->afterSave();
 
         return $this;
+    }
+
+    protected function getDataType($value)
+    {
+        switch (gettype($value)) {
+            case 'boolean':
+                return \PDO::PARAM_BOOL;
+
+                break;
+            case 'integer':
+                return \PDO::PARAM_INT;
+
+                break;
+            case 'NULL':
+                return \PDO::PARAM_NULL;
+
+                break;
+            default:
+                return \PDO::PARAM_STR;
+
+        }
     }
 
     protected function afterSave()
