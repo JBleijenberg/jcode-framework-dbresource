@@ -106,6 +106,8 @@ abstract class Resource extends Collection
         'not-null', // NOT NULL
     ];
 
+    protected $cacheResults = false;
+
     public function init()
     {
         if (!$this->table) {
@@ -460,6 +462,15 @@ abstract class Resource extends Collection
 
     public function getAllItems()
     {
+        if (($cache = Application::getConfig()->getCacheInstance())) {
+            if ($cache->exists(md5($this->getCacheKey())) && $this->cacheResults) {
+                $collection  = unserialize($cache->get(md5($this->getCacheKey())));
+                $this->items = $collection->getAllItems();
+
+                return $collection;
+            }
+        }
+
         $collection = Application::getClass('\Jcode\DataObject\Collection');
 
         if (!$this->items) {
@@ -481,7 +492,30 @@ abstract class Resource extends Collection
             }
         }
 
+        if (($cache = Application::getConfig()->getCacheInstance())) {
+            if (!$cache->exists(md5($this->getCacheKey())) && $this->cacheResults) {
+                $cache->set(md5($this->getCacheKey()), serialize($collection));
+            }
+        }
+
         return $collection;
+    }
+
+    public function getCacheKey()
+    {
+        return md5(serialize([
+            $this->select,
+            $this->join,
+            $this->filter,
+            $this->table,
+            $this->primaryKey,
+            $this->modelClass,
+            $this->expressions,
+            $this->order,
+            $this->limit,
+            $this->distinct,
+            $this->group
+        ]));
     }
 
     public function getAllData()
@@ -573,5 +607,10 @@ abstract class Resource extends Collection
         }
 
         return $array;
+    }
+
+    public function cacheResults()
+    {
+        $this->cacheResults = true;
     }
 }
