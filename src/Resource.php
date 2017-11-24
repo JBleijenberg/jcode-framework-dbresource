@@ -69,6 +69,13 @@ abstract class Resource extends Collection
      */
     protected $filter = [];
 
+    /**
+     * Array of OR conditions
+     *
+     * @var array
+     */
+    protected $orFilter = [];
+
     protected $expressions = [];
 
     /**
@@ -155,6 +162,11 @@ abstract class Resource extends Collection
         return $this->filter;
     }
 
+    public function getOrFilter()
+    {
+        return $this->orFilter;
+    }
+
     public function getExpression()
     {
         return $this->expressions;
@@ -210,12 +222,8 @@ abstract class Resource extends Collection
      * @param $columns
      * @return $this
      */
-    public function addColumnsToSelect($columns)
+    public function addColumnsToSelect(...$columns)
     {
-        if (!is_array($columns)) {
-            $columns = [$columns];
-        }
-
         foreach ($columns as $column) {
             $this->addColumnToSelect($column);
         }
@@ -266,24 +274,28 @@ abstract class Resource extends Collection
     /**
      * Add filter to query. If condition is not an array, filter defaults to $column = $condition
      *
-     * @param string $column
+     * @param string|array $column
      * @param string|array $filter
      * @return $this
      */
-    public function addFilter($column, $filter)
+    public function addFilter($column, $filter = null)
     {
-        if (!is_array($filter)) {
-            $filter = ['eq' => $filter];
-        }
+        if (is_array($column)) {
+            $this->orFilter[] = $column;
+        } else {
+            if (!is_array($filter)) {
+                $filter = ['eq' => $filter];
+            }
 
-        if (!strstr($column, '.')) {
-            $column = sprintf('main_table.%s', $column);
-        }
+            if (!strstr($column, '.')) {
+                $column = sprintf('main_table.%s', $column);
+            }
 
-        reset($filter);
+            reset($filter);
 
-        if (in_array(key($filter), $this->conditions)) {
-            $this->filter[$column][] = [key($filter) => current($filter)];
+            if (in_array(key($filter), $this->conditions)) {
+                $this->filter[$column][] = [key($filter) => current($filter)];
+            }
         }
 
         return $this;
@@ -329,7 +341,7 @@ abstract class Resource extends Collection
             $column = sprintf('main_table.%s', $column);
         }
 
-        $this->expressions[$column][] = [$expression => $values];
+        $this->expressions[$column] = [$expression => $values];
 
         return $this;
     }
