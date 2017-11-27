@@ -217,6 +217,20 @@ abstract class Resource extends Collection
     }
 
     /**
+     *
+     * Add date range filter
+     * @param $column
+     * @param array $dates [from => $date, to => $date]
+     * @return $this
+     */
+    public function addDateFilter($column, array $dates)
+    {
+        $this->filter[$column][] = ['date' => $dates];
+
+        return $this;
+    }
+
+    /**
      * Mass add column to select statement
      *
      * @param $columns
