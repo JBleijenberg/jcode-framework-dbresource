@@ -64,61 +64,67 @@ abstract class Model extends DataObject
 
         if ($this->hasChangedData()) {
             if ($this->getData($resource->getPrimaryKey()) && $forceInsert === false) {
-                $update = "UPDATE {$resource->getTable()} SET ";
 
-                foreach ($this->getAllData() as $key => $value) {
-                    if (
-                        ($key != $resource->getPrimaryKey()) &&
-                        ($value !== $this->getOrigData($key)) &&
-                        (in_array($key, $columns))
-                    ) {
-                        if ($value instanceof Resource) {
-                            $data = trim($this->getData($bind)->getQuery(), ';');
-                            $update .= "{$key} = ({$data}), ";
-                        } else {
-                            $update .= "{$key} = :{$key}, ";
-                        }
-                    }
-                }
+                $diff = array_diff_assoc($this->getAllData(), $this->getOrigData());
 
-                $update = substr_replace($update, " ", -2);
+                if (!empty($diff)) {
+                    $update = "UPDATE {$resource->getTable()} SET ";
 
-                $update .= " WHERE {$resource->getPrimaryKey()} = :{$resource->getPrimaryKey()}";
-
-                /* @var \Jcode\Db\AdapterInterface|\Jcode\DBAdapter\Mysql $adapter */
-                $adapter = $resource->getAdapter();
-
-                try {
-                    if (!$adapter->inTransaction()) {
-                        $adapter->beginTransaction();
-                    }
-
-                    $stmt = $adapter->prepare($update);
-
-                    $stmt->bindValue($resource->getPrimaryKey(), $this->getData($resource->getPrimaryKey()));
-
-                    foreach (array_diff_assoc($this->getAllData(), $this->getOrigData()) as $id => $value) {
-                        if (in_array($id, $columns)) {
-                            if (!$value instanceof Resource) {
-                                $stmt->bindValue(":{$id}", $value, $this->getDataType($value));
+                    foreach ($this->getAllData() as $key => $value) {
+                        if (
+                            ($key != $resource->getPrimaryKey()) &&
+                            ($value !== $this->getOrigData($key)) &&
+                            (in_array($key, $columns))
+                        ) {
+                            if ($value instanceof Resource) {
+                                $data = trim($this->getData($bind)->getQuery(), ';');
+                                $update .= "{$key} = ({$data}), ";
+                            } else {
+                                $update .= "{$key} = :{$key}, ";
                             }
                         }
                     }
 
-                    $stmt->execute();
-                    $adapter->commit();
-                } catch (PDOException $e) {
-                    $adapter->rollBack();
+                    $update = substr_replace($update, " ", -2);
 
-                    Application::logException($e);
+                    $update .= " WHERE {$resource->getPrimaryKey()} = :{$resource->getPrimaryKey()}";
 
-                    throw new \Exception($e->getMessage());
-                } catch (Exception $e) {
-                    $adapter->rollBack();
+                    /* @var \Jcode\Db\AdapterInterface|\Jcode\DBAdapter\Mysql $adapter */
+                    $adapter = $resource->getAdapter();
 
-                    Application::logException($e);
+                    try {
+                        if (!$adapter->inTransaction()) {
+                            $adapter->beginTransaction();
+                        }
 
-                    throw new \Exception($e->getMessage());
+                        $stmt = $adapter->prepare($update);
+
+                        $stmt->bindValue($resource->getPrimaryKey(), $this->getData($resource->getPrimaryKey()));
+
+                        foreach ($diff as $id => $value) {
+
+                            if (in_array($id, $columns)) {
+                                if (!$value instanceof Resource) {
+                                    $stmt->bindValue(":{$id}", $value, $this->getDataType($value));
+                                }
+                            }
+                        }
+
+                        $stmt->execute();
+                        $adapter->commit();
+                    } catch (PDOException $e) {
+                        $adapter->rollBack();
+
+                        Application::logException($e);
+
+                        throw new \Exception($e->getMessage());
+                    } catch (Exception $e) {
+                        $adapter->rollBack();
+
+                        Application::logException($e);
+
+                        throw new \Exception($e->getMessage());
+                    }
                 }
             } else {
                 $keys       = array_keys($this->getAllData());
