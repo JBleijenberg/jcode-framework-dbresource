@@ -610,7 +610,16 @@ abstract class Resource extends Collection
 
     public function reset()
     {
-        $this->init();
+        $this->select      = ['main_table.*'];
+        $this->join        = [];
+        $this->filter      = [];
+        $this->orFilter    = [];
+        $this->expressions = [];
+        $this->order       = [];
+        $this->limit       = [];
+        $this->distinct    = null;
+        $this->group       = [];
+        $this->conditions  = [];
 
         return $this;
     }
