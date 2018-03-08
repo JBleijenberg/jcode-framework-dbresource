@@ -3,7 +3,7 @@
   "type": "library",
   "description": "Database resource module for J!Code PHP framework",
   "homepage": "https://github.com/JBleijenberg/jcode-framework-dbresource",
-  "license": "GPL 3.0",
+  "license": "GPL-3.0-or-later",
   "authors": [
     {
       "name": "Jeroen Bleijenberg",
