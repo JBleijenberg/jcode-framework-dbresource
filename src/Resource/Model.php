@@ -60,7 +60,7 @@ abstract class Model extends DataObject
 
         /* @var \Jcode\Db\Resource $resource */
         $resource = $this->getResource();
-        $columns  = array_column($resource->execute("DESCRIBE {$resource->getTable()}"), 'Field');
+        $columns  = array_column($resource->execute("DESCRIBE `{$resource->getTable()}`"), 'Field');
 
         if ($this->hasChangedData()) {
             if ($this->getData($resource->getPrimaryKey()) && $forceInsert === false) {
@@ -68,7 +68,8 @@ abstract class Model extends DataObject
                 $diff = array_diff_assoc($this->getAllData(), $this->getOrigData());
 
                 if (!empty($diff)) {
-                    $update = "UPDATE {$resource->getTable()} SET ";
+                    $update[]      = "UPDATE `{$resource->getTable()}` SET";
+                    $columnUpdates = [];
 
                     foreach ($this->getAllData() as $key => $value) {
                         if (
@@ -78,52 +79,55 @@ abstract class Model extends DataObject
                         ) {
                             if ($value instanceof Resource) {
                                 $data = trim($this->getData($bind)->getQuery(), ';');
-                                $update .= "{$key} = ({$data}), ";
+                                $columnUpdates[] = "{$key} = ({$data})";
                             } else {
-                                $update .= "{$key} = :{$key}, ";
+                                $columnUpdates[] = "{$key} = :{$key}";
                             }
                         }
                     }
 
-                    $update = substr_replace($update, " ", -2);
-
-                    $update .= " WHERE {$resource->getPrimaryKey()} = :{$resource->getPrimaryKey()}";
+                    $update[] = implode(', ', $columnUpdates);
+                    $update[] = "WHERE {$resource->getPrimaryKey()} = :{$resource->getPrimaryKey()}";
 
                     /* @var \Jcode\Db\AdapterInterface|\Jcode\DBAdapter\Mysql $adapter */
                     $adapter = $resource->getAdapter();
 
-                    try {
-                        if (!$adapter->inTransaction()) {
-                            $adapter->beginTransaction();
-                        }
+                    if (!empty($columnUpdates)) {
+                        $update = implode(' ', $update);
 
-                        $stmt = $adapter->prepare($update);
+                        try {
+                            if (!$adapter->inTransaction()) {
+                                $adapter->beginTransaction();
+                            }
 
-                        $stmt->bindValue($resource->getPrimaryKey(), $this->getData($resource->getPrimaryKey()));
+                            $stmt = $adapter->prepare($update);
 
-                        foreach ($diff as $id => $value) {
+                            $stmt->bindValue($resource->getPrimaryKey(), $this->getData($resource->getPrimaryKey()));
 
-                            if (in_array($id, $columns)) {
-                                if (!$value instanceof Resource) {
-                                    $stmt->bindValue(":{$id}", $value, $this->getDataType($value));
+                            foreach ($diff as $id => $value) {
+
+                                if (in_array($id, $columns)) {
+                                    if (!$value instanceof Resource) {
+                                        $stmt->bindValue(":{$id}", $value, $this->getDataType($value));
+                                    }
                                 }
                             }
+
+                            $stmt->execute();
+                            $adapter->commit();
+                        } catch (PDOException $e) {
+                            $adapter->rollBack();
+
+                            Application::logException($e);
+
+                            throw new \Exception($e->getMessage());
+                        } catch (Exception $e) {
+                            $adapter->rollBack();
+
+                            Application::logException($e);
+
+                            throw new \Exception($e->getMessage());
                         }
-
-                        $stmt->execute();
-                        $adapter->commit();
-                    } catch (PDOException $e) {
-                        $adapter->rollBack();
-
-                        Application::logException($e);
-
-                        throw new \Exception($e->getMessage());
-                    } catch (Exception $e) {
-                        $adapter->rollBack();
-
-                        Application::logException($e);
-
-                        throw new \Exception($e->getMessage());
                     }
                 }
             } else {
@@ -144,7 +148,7 @@ abstract class Model extends DataObject
 
                 $binds = trim($binds, ', ');
 
-                $insert = "INSERT INTO {$resource->getTable()} ({$columnKeys}) VALUES ({$binds})";
+                $insert = "INSERT INTO `{$resource->getTable()}` ({$columnKeys}) VALUES ({$binds})";
 
                 /* @var \Jcode\DBAdapter\Mysql|\Jcode\Db\AdapterInterface $adapter */
                 $adapter = $resource->getAdapter();
@@ -288,7 +292,7 @@ abstract class Model extends DataObject
             $this->beforeDelete();
 
             if ($this->getData($resource->getPrimaryKey())) {
-                $query = "DELETE FROM {$resource->getTable()} WHERE {$resource->getPrimaryKey()} = '{$this->getData($resource->getPrimaryKey())}'";
+                $query = "DELETE FROM `{$resource->getTable()}` WHERE {$resource->getPrimaryKey()} = '{$this->getData($resource->getPrimaryKey())}'";
 
                 try {
                     $resource->execute($query);
